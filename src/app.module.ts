@@ -5,16 +5,12 @@ import { ProductsModule } from './products/products.module';
 import { LoggerMiddleware } from './logger/logger.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
+import { AppDataSource } from './data-source';
 
 @Module({
   imports: [
     ProductsModule,
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'database.sqlite',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
-    }),
+    TypeOrmModule.forRoot(AppDataSource.options),
     UserModule,
   ],
   controllers: [AppController],
