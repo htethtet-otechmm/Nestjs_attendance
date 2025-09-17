@@ -6,12 +6,14 @@ import { LoggerMiddleware } from './logger/logger.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AppDataSource } from './data-source';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     ProductsModule,
     TypeOrmModule.forRoot(AppDataSource.options),
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
