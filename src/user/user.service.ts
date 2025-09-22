@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,8 +19,17 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const existingUser = await this.usersRepository.findOneBy({
+      email: createUserDto.email,
+    });
 
+    if (existingUser) {
+      throw new ConflictException(
+        `User with email "${createUserDto.email}" already exists.`,
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const newUser = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
@@ -24,6 +37,16 @@ export class UserService {
 
     return this.usersRepository.save(newUser);
   }
+
+  // async create(createUserDto: CreateUserDto): Promise<User> {
+  //   // ... (existing code is correct)
+  //   const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+  //   const newUser = this.usersRepository.create({
+  //     ...createUserDto,
+  //     password: hashedPassword,
+  //   });
+  //   return this.usersRepository.save(newUser);
+  // }
 
   findAll(): Promise<User[]> {
     return this.usersRepository.find();
@@ -37,6 +60,15 @@ export class UserService {
     return user;
   }
 
+  /**
+   * Finds a user by their name.
+   * @param name The name to search for.
+   * @returns The user if found, otherwise undefined.
+   */
+  async findOneByUsername(name: string): Promise<User | undefined> {
+    return this.usersRepository.findOneBy({ name });
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.usersRepository.preload({
       id: id,
@@ -48,8 +80,10 @@ export class UserService {
     return this.usersRepository.save(user);
   }
 
-  async remove(id: number): Promise<User> {
-    const user = await this.findOne(id);
-    return this.usersRepository.remove(user);
+  async remove(id: number): Promise<void> {
+    const result = await this.usersRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with ID #${id} not found`);
+    }
   }
 }
