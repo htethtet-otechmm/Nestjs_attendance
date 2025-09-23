@@ -13,8 +13,8 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('profile')
-  getProfile(@Request() req) {
+  @Get('products')
+  getAllProducts(@Request() req) {
     return req.user;
   }
 }

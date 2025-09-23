@@ -38,16 +38,6 @@ export class UserService {
     return this.usersRepository.save(newUser);
   }
 
-  // async create(createUserDto: CreateUserDto): Promise<User> {
-  //   // ... (existing code is correct)
-  //   const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-  //   const newUser = this.usersRepository.create({
-  //     ...createUserDto,
-  //     password: hashedPassword,
-  //   });
-  //   return this.usersRepository.save(newUser);
-  // }
-
   findAll(): Promise<User[]> {
     return this.usersRepository.find();
   }
