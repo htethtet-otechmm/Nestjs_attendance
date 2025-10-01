@@ -59,6 +59,10 @@ export class UserService {
     return this.usersRepository.findOneBy({ name });
   }
 
+  async findOneByEmail(email: string): Promise<User | undefined> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.usersRepository.preload({
       id: id,
