@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AppDataSource } from './data-source';
 import { AuthModule } from './auth/auth.module';
+import { LeaveModule } from './leave/leave.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
     TypeOrmModule.forRoot(AppDataSource.options),
     UserModule,
     AuthModule,
+    LeaveModule,
   ],
   controllers: [AppController],
   providers: [AppService],
