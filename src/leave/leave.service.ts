@@ -1,10 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateLeaveDto } from './dto/create-leave.dto';
 import { UpdateLeaveDto } from './dto/update-leave.dto';
 
+export interface LeaveRequest {
+  id: number;
+  dates: Date[] | string[]; // Allow both for consistency
+  leaveType: string;
+  mode: string;
+  numberOfDays: number;
+  reason: string;
+  submittedOn: string;
+  status: string;
+}
+
 @Injectable()
 export class LeaveService {
-  private readonly leaveRequests = [
+  private readonly leaveRequests: LeaveRequest[] = [
     {
       id: 1,
       dates: ['Apr 25'],
@@ -36,30 +47,52 @@ export class LeaveService {
       status: 'Rejected',
     },
   ];
-  create(createLeaveDto: CreateLeaveDto) {
-    const newRequest = {
+
+  create(createLeaveDto: CreateLeaveDto): LeaveRequest {
+    const { leaveDates, ...restOfDto } = createLeaveDto;
+    const dateFormatOptions: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+    };
+
+    const newRequest: LeaveRequest = {
       id: Date.now(),
-      ...createLeaveDto,
-      submittedOn: new Date().toLocaleDateString(),
+      ...restOfDto,
+      dates: leaveDates.map((date) =>
+        new Date(date).toLocaleDateString('en-US', dateFormatOptions),
+      ),
+      // dates: leaveDates,
+      submittedOn: new Date().toLocaleDateString('en-US', dateFormatOptions),
       status: 'Pending',
     };
+
     this.leaveRequests.push(newRequest);
     return newRequest;
   }
 
-  findAll() {
+  findAll(): LeaveRequest[] {
     return this.leaveRequests;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} leave`;
+  findOne(id: number): LeaveRequest {
+    const leave = this.leaveRequests.find((req) => req.id === id);
+    if (!leave) {
+      throw new NotFoundException(`Leave request with ID ${id} not found.`);
+    }
+    return leave;
   }
 
+  // Update and Remove methods (placeholder)
   update(id: number, updateLeaveDto: UpdateLeaveDto) {
     return `This action updates a #${id} leave`;
   }
 
   remove(id: number) {
-    return { message: `Request with id ${id} deleted.` };
+    const index = this.leaveRequests.findIndex((req) => req.id === id);
+    if (index === -1) {
+      throw new NotFoundException(`Leave request with ID ${id} not found.`);
+    }
+    this.leaveRequests.splice(index, 1);
+    return { message: `Request with id ${id} has been deleted.` };
   }
 }

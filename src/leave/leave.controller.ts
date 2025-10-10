@@ -6,28 +6,30 @@ import {
   Patch,
   Param,
   Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { CreateLeaveDto } from './dto/create-leave.dto';
 import { UpdateLeaveDto } from './dto/update-leave.dto';
+import { LeaveRequest } from './leave.service';
 
 @Controller('leave')
 export class LeaveController {
   constructor(private readonly leaveService: LeaveService) {}
 
   @Post()
-  create(@Body() createLeaveDto: CreateLeaveDto) {
+  async create(@Body() createLeaveDto: CreateLeaveDto): Promise<LeaveRequest> {
     return this.leaveService.create(createLeaveDto);
   }
 
   @Get()
-  findAll() {
+  async findAll(): Promise<LeaveRequest[]> {
     return this.leaveService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.leaveService.findOne(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<LeaveRequest> {
+    return this.leaveService.findOne(id);
   }
 
   @Patch(':id')
