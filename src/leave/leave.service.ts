@@ -82,9 +82,18 @@ export class LeaveService {
     return leave;
   }
 
-  // Update and Remove methods (placeholder)
-  update(id: number, updateLeaveDto: UpdateLeaveDto) {
-    return `This action updates a #${id} leave`;
+  update(id: number, updateLeaveDto: UpdateLeaveDto): LeaveRequest {
+    const requestIndex = this.leaveRequests.findIndex((req) => req.id === id);
+
+    if (requestIndex === -1) {
+      throw new NotFoundException(`Leave request with ID ${id} not found.`);
+    }
+    const updatedRequest = {
+      ...this.leaveRequests[requestIndex],
+      ...updateLeaveDto,
+    };
+    this.leaveRequests[requestIndex] = updatedRequest;
+    return updatedRequest;
   }
 
   remove(id: number) {
