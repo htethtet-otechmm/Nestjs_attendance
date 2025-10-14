@@ -1,107 +1,63 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateLeaveDto } from './dto/create-leave.dto';
 import { UpdateLeaveDto } from './dto/update-leave.dto';
-
-export interface LeaveRequest {
-  id: number;
-  dates: Date[] | string[]; // Allow both for consistency
-  leaveType: string;
-  mode: string;
-  numberOfDays: number;
-  reason: string;
-  submittedOn: string;
-  status: string;
-}
+import { Leave } from './entities/leave.entity';
 
 @Injectable()
 export class LeaveService {
-  private readonly leaveRequests: LeaveRequest[] = [
-    {
-      id: 1,
-      dates: ['Apr 25'],
-      leaveType: 'Unpaid Leave',
-      mode: 'Full Day',
-      numberOfDays: 1,
-      reason: 'Emergency',
-      submittedOn: 'Apr 25',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      dates: ['Mar 25'],
-      leaveType: 'Paid Leave',
-      mode: 'Half-day',
-      numberOfDays: 0.5,
-      reason: 'Family Issues',
-      submittedOn: 'Apr 23',
-      status: 'Approved',
-    },
-    {
-      id: 3,
-      dates: ['Feb 28, Mar 1, 2'],
-      leaveType: 'Maternity',
-      mode: 'Multi-days',
-      numberOfDays: 3,
-      reason: 'Casual',
-      submittedOn: 'Apr 23',
-      status: 'Rejected',
-    },
-  ];
+  constructor(
+    @InjectRepository(Leave)
+    private leaveRepository: Repository<Leave>,
+  ) {}
 
-  create(createLeaveDto: CreateLeaveDto): LeaveRequest {
-    const { leaveDates, ...restOfDto } = createLeaveDto;
+  async create(createLeaveDto: CreateLeaveDto): Promise<Leave> {
     const dateFormatOptions: Intl.DateTimeFormatOptions = {
       month: 'short',
       day: 'numeric',
     };
 
-    const newRequest: LeaveRequest = {
-      id: Date.now(),
-      ...restOfDto,
-      dates: leaveDates.map((date) =>
+    const newLeave = this.leaveRepository.create({
+      ...createLeaveDto,
+      dates: createLeaveDto.leaveDates.map((date) =>
         new Date(date).toLocaleDateString('en-US', dateFormatOptions),
       ),
-      // dates: leaveDates,
       submittedOn: new Date().toLocaleDateString('en-US', dateFormatOptions),
       status: 'Pending',
-    };
+    });
 
-    this.leaveRequests.push(newRequest);
-    return newRequest;
+    return this.leaveRepository.save(newLeave);
   }
 
-  findAll(): LeaveRequest[] {
-    return this.leaveRequests;
+  async findAll(): Promise<Leave[]> {
+    return this.leaveRepository.find();
   }
 
-  findOne(id: number): LeaveRequest {
-    const leave = this.leaveRequests.find((req) => req.id === id);
+  async findOne(id: number): Promise<Leave> {
+    const leave = await this.leaveRepository.findOneBy({ id });
     if (!leave) {
       throw new NotFoundException(`Leave request with ID ${id} not found.`);
     }
     return leave;
   }
 
-  update(id: number, updateLeaveDto: UpdateLeaveDto): LeaveRequest {
-    const requestIndex = this.leaveRequests.findIndex((req) => req.id === id);
-
-    if (requestIndex === -1) {
+  async update(id: number, updateLeaveDto: UpdateLeaveDto): Promise<Leave> {
+    const leave = await this.leaveRepository.preload({
+      id: id,
+      ...updateLeaveDto,
+    });
+    if (!leave) {
       throw new NotFoundException(`Leave request with ID ${id} not found.`);
     }
-    const updatedRequest = {
-      ...this.leaveRequests[requestIndex],
-      ...updateLeaveDto,
-    };
-    this.leaveRequests[requestIndex] = updatedRequest;
-    return updatedRequest;
+    return this.leaveRepository.save(leave);
   }
 
-  remove(id: number) {
-    const index = this.leaveRequests.findIndex((req) => req.id === id);
-    if (index === -1) {
+  async remove(id: number): Promise<{ message: string }> {
+    const result = await this.leaveRepository.delete(id);
+    if (result.affected === 0) {
       throw new NotFoundException(`Leave request with ID ${id} not found.`);
     }
-    this.leaveRequests.splice(index, 1);
     return { message: `Request with id ${id} has been deleted.` };
   }
 }
