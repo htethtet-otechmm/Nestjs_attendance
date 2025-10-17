@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { AppDataSource } from './data-source';
 import { AuthModule } from './auth/auth.module';
 import { LeaveModule } from './leave/leave.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -15,6 +16,9 @@ import { LeaveModule } from './leave/leave.module';
     UserModule,
     AuthModule,
     LeaveModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
