@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from 'src/user/entities/user.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 
 @Entity()
 export class Leave {
@@ -14,15 +15,18 @@ export class Leave {
   @Column()
   mode: string;
 
-  @Column()
+  @Column({ type: 'float' })
   numberOfDays: number;
 
   @Column()
   reason: string;
 
-  @Column()
-  submittedOn: string;
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  submittedOn: Date;
 
-  @Column()
+  @Column({ default: 'Pending' })
   status: string;
+
+  @ManyToOne(() => User, (user) => user.leaveRequests)
+  user: User;
 }

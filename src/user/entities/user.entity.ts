@@ -1,5 +1,6 @@
 import { Exclude, Expose } from 'class-transformer';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Leave } from 'src/leave/entities/leave.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 export enum Role {
   USER = 'user',
@@ -31,4 +32,7 @@ export class User {
     default: Role.USER,
   })
   role: Role;
+
+  @OneToMany(() => Leave, (leave) => leave.user)
+  leaveRequests: Leave[];
 }

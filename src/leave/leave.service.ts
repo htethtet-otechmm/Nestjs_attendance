@@ -30,8 +30,13 @@ export class LeaveService {
     return this.leaveRepository.save(newLeave);
   }
 
-  async findAll(): Promise<Leave[]> {
-    return this.leaveRepository.find();
+  // async findAll(): Promise<Leave[]> {
+  //   return this.leaveRepository.find();
+  // }
+
+  findAll(): Promise<Leave[]> {
+    // MODIFIED: relations: ['user'] ကို ထည့်ပါ။
+    return this.leaveRepository.find({ relations: ['user'] });
   }
 
   async findOne(id: number): Promise<Leave> {
@@ -59,5 +64,12 @@ export class LeaveService {
       throw new NotFoundException(`Leave request with ID ${id} not found.`);
     }
     return { message: `Request with id ${id} has been deleted.` };
+  }
+
+  findByUserId(userId: number): Promise<Leave[]> {
+    return this.leaveRepository.find({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
   }
 }
