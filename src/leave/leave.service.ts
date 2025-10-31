@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateLeaveDto } from './dto/create-leave.dto';
@@ -12,7 +16,7 @@ export class LeaveService {
     private leaveRepository: Repository<Leave>,
   ) {}
 
-  async create(createLeaveDto: CreateLeaveDto): Promise<Leave> {
+  async create(createLeaveDto: CreateLeaveDto, userId: number): Promise<Leave> {
     const dateFormatOptions: Intl.DateTimeFormatOptions = {
       month: 'short',
       day: 'numeric',
@@ -23,46 +27,62 @@ export class LeaveService {
       dates: createLeaveDto.leaveDates.map((date) =>
         new Date(date).toLocaleDateString('en-US', dateFormatOptions),
       ),
-      submittedOn: new Date().toLocaleDateString('en-US', dateFormatOptions),
-      status: 'Pending',
+      user: { id: userId },
     });
 
     return this.leaveRepository.save(newLeave);
   }
 
-  // async findAll(): Promise<Leave[]> {
-  //   return this.leaveRepository.find();
-  // }
-
   findAll(): Promise<Leave[]> {
-    // MODIFIED: relations: ['user'] ကို ထည့်ပါ။
     return this.leaveRepository.find({ relations: ['user'] });
   }
 
   async findOne(id: number): Promise<Leave> {
-    const leave = await this.leaveRepository.findOneBy({ id });
+    const leave = await this.leaveRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
     if (!leave) {
       throw new NotFoundException(`Leave request with ID ${id} not found.`);
     }
     return leave;
   }
 
-  async update(id: number, updateLeaveDto: UpdateLeaveDto): Promise<Leave> {
-    const leave = await this.leaveRepository.preload({
-      id: id,
-      ...updateLeaveDto,
-    });
-    if (!leave) {
-      throw new NotFoundException(`Leave request with ID ${id} not found.`);
+  async update(
+    id: number,
+    updateLeaveDto: UpdateLeaveDto,
+    userId: number,
+  ): Promise<Leave> {
+    const leave = await this.findOne(id);
+
+    if (leave.user.id !== userId) {
+      throw new UnauthorizedException('You can only update your own requests.');
     }
-    return this.leaveRepository.save(leave);
+
+    if (leave.status !== 'Pending') {
+      throw new UnauthorizedException(
+        'Cannot update a request that has already been processed.',
+      );
+    }
+
+    const updatedLeave = this.leaveRepository.merge(leave, updateLeaveDto);
+    return this.leaveRepository.save(updatedLeave);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
-    const result = await this.leaveRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Leave request with ID ${id} not found.`);
+  async remove(id: number, userId: number): Promise<{ message: string }> {
+    const leave = await this.findOne(id);
+
+    if (leave.user.id !== userId) {
+      throw new UnauthorizedException('You can only delete your own requests.');
     }
+
+    if (leave.status !== 'Pending') {
+      throw new UnauthorizedException(
+        'Cannot delete a request that has already been processed.',
+      );
+    }
+
+    await this.leaveRepository.delete(id);
     return { message: `Request with id ${id} has been deleted.` };
   }
 
@@ -71,5 +91,11 @@ export class LeaveService {
       where: { user: { id: userId } },
       relations: ['user'],
     });
+  }
+
+  async updateStatus(id: number, status: string): Promise<Leave> {
+    const leave = await this.findOne(id);
+    leave.status = status;
+    return this.leaveRepository.save(leave);
   }
 }

@@ -25,9 +25,14 @@ export class AuthService {
       role: userData.role,
     };
 
+    // return {
+    //   ...userData,
+    //   accessToken: this.jwtService.sign(payload),
+    // };
+
     return {
-      ...userData,
       accessToken: this.jwtService.sign(payload),
+      user: userData,
     };
   }
 }
